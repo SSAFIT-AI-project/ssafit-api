@@ -88,7 +88,7 @@ ssafit-api/
 ├── routes/                # API 라우터
 │   ├── cards.py          # 카드 관련 엔드포인트
 │   └── ask.py            # AI 상담 엔드포인트
-├── chroma_db/            # 벡터 데이터베이스 (자동 생성)
+├── chroma_db/            # 벡터 데이터베이스 (자동 생성 또는 파일 수동 삽입)
 └── venv/                 # 가상환경 (자동 생성)
 ```
 
