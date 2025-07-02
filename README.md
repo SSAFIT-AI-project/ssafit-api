@@ -1,4 +1,7 @@
-# SSAFIT API - 신용카드 추천 및 AI 상담 서비스
+<div align="center">
+  <img src="https://via.placeholder.com/400x200/4F46E5/FFFFFF?text=SSAFIT+API" alt="SSAFIT API Logo" width="400"/>
+  <h1>SSAFIT API - 신용카드 추천 및 AI 상담 서비스</h1>
+</div>
 
 ## 📋 프로젝트 소개
 
