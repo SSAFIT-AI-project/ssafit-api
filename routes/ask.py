@@ -26,7 +26,7 @@ def get_retriever():
         embedding_function=UpstageEmbeddings(model="embedding-query")
     )
     return chroma_vectorstore.as_retriever(
-        search_type='similarity',
+        search_type='mmr',
         search_kwargs={"k": 10}
     )
 
