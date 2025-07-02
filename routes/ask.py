@@ -27,7 +27,7 @@ def get_retriever():
     )
     return chroma_vectorstore.as_retriever(
         search_type='mmr',
-        search_kwargs={"k": 10}
+        search_kwargs={"k": 10, "score_threshold": 0.8}
     )
 
 class AskRequest(BaseModel):
