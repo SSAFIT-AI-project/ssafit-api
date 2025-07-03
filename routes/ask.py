@@ -116,7 +116,7 @@ def generate_prompt(query: str, context: str, conversation: List[ConversationMes
     ---
 
     ## 답변 가이드라인
-    1. **카드 식별**: 메타데이터에서 카드명(cardName)과 카드사(cardCompany)를 정확히 파악하여 언급
+    1. **카드 식별**: 메타데이터에서 카드명(cardName)과 카드사(cardCompany)를 정확히 파악하여 언급. 만약 카드명에 다른 카드사가 포함된 경우 카드사(CardCompany)를 언급하여 명확하게 구분해줘.
     2. **구체적 정보 제공**: 연회비, 혜택, 서비스 등 구체적인 수치와 내용을 포함
     3. **비교 분석**: 여러 카드가 언급된 경우 각각의 특징을 비교하여 설명
     4. **사용자 친화적**: 복잡한 정보도 쉽게 이해할 수 있도록 설명
