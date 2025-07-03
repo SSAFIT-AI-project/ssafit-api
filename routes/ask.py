@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
+from typing import List, Optional
 from langchain_chroma import Chroma
 from langchain_upstage import UpstageEmbeddings, ChatUpstage
 from langchain_core.prompts import ChatPromptTemplate
@@ -30,8 +31,13 @@ def get_retriever():
         search_kwargs={"k": 10, "score_threshold": 0.8}
     )
 
+class ConversationMessage(BaseModel):
+    role: str
+    content: str
+
 class AskRequest(BaseModel):
     question: str
+    conversation: Optional[List[ConversationMessage]] = []
 
 @router.post("/ask")
 def ask(request: AskRequest):
@@ -51,8 +57,8 @@ def ask(request: AskRequest):
             "ground_truth": []
         }
         
-        # fill_data 함수를 사용하여 답변 생성
-        fill_data(request.question, "", data, retriever)
+        # fill_data 함수를 사용하여 답변 생성 (대화 기록 포함)
+        fill_data(request.question, "", data, retriever, request.conversation)
         
         # 마지막 답변 반환
         if data["answer"]:
@@ -89,13 +95,23 @@ def format_context(docs: list[Document]):
 
 
 # 컨텍스트와 사용자 질의를 기반으로 프롬프트 작성
-def generate_prompt(query: str, context: str):
-  prompt_str = f'''
+def generate_prompt(query: str, context: str, conversation: List[ConversationMessage] = None):
+    # 대화 기록 포맷팅
+    conversation_history = ""
+    if conversation and len(conversation) > 0:
+        conversation_history = "\n## 이전 대화 기록\n"
+        for msg in conversation:
+            role = "사용자" if msg.role == "user" else "어시스턴트"
+            conversation_history += f"**{role}**: {msg.content}\n"
+    
+    prompt_str = f'''
     당신은 신용카드 전문가입니다.
     아래 제공된 카드 정보와 가이드라인을 바탕으로 사용자의 질문에 대해 정확하고 친절하게 답변해주세요.
 
     ## 참고할 카드 정보
     {context}
+
+    {conversation_history}
 
     ---
 
@@ -105,24 +121,24 @@ def generate_prompt(query: str, context: str):
     3. **비교 분석**: 여러 카드가 언급된 경우 각각의 특징을 비교하여 설명
     4. **사용자 친화적**: 복잡한 정보도 쉽게 이해할 수 있도록 설명
     5. **실용적 조언**: 사용자의 질문에 맞는 실용적인 조언 제공
-    6. 모든 답변은 마크 다운 형식으로 작성해주세요.
-    7. 모든 답변은 반드시 한국어로 하세요.
-    8. 답변에 '어떠한 문서에 따르면,' 이라는 말을 포함하지 마세요.
-    9. 카드와 관련된 질문이 아니라면 답변하지 마세요.
-    10. 같은 카드가 여러번 언급되지 않게 하세요. 한 번에 같은 카드를 소개하지 마세요.
+    6. **대화 연속성**: 이전 대화 기록을 참고하여 자연스럽게 연결되는 답변 제공
+    7. 모든 답변은 마크 다운 형식으로 작성해주세요.
+    8. 모든 답변은 반드시 한국어로 하세요.
+    9. 답변에 '어떠한 문서에 따르면,' 이라는 말을 포함하지 마세요.
+    10. 카드와 관련된 질문이 아니라면 답변하지 마세요.
+    11. 같은 카드가 여러번 언급되지 않게 하세요. 한 번에 같은 카드를 소개하지 마세요.
     ---
 
     ## 사용자의 질문
     {query}
     '''
 
-  prompt = ChatPromptTemplate.from_template(prompt_str)
-
-  return prompt
+    prompt = ChatPromptTemplate.from_template(prompt_str)
+    return prompt
 
 
 # RAG retrieve, LLM 질의 후 결과를 data에 저장
-def fill_data(query, ground_truth, data, retr):
+def fill_data(query, ground_truth, data, retr, conversation: List[ConversationMessage] = None):
     # LLM 초기화
     llm = ChatUpstage(model="solar-1-mini-chat")
     
@@ -140,7 +156,7 @@ def fill_data(query, ground_truth, data, retr):
 
     # LLM 질의
     try:
-        prompt = generate_prompt(query, context)
+        prompt = generate_prompt(query, context, conversation)
         chain = prompt | llm | StrOutputParser()
 
         answer = chain.invoke({"history": [], "context": context, "input": query})
